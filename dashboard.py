@@ -299,6 +299,8 @@ def simulate_mission(
 
 if "sim_time" not in st.session_state:
     st.session_state.sim_time = 32.0
+if "mission_time_control" not in st.session_state:
+    st.session_state.mission_time_control = st.session_state.sim_time
 if "playing" not in st.session_state:
     st.session_state.playing = False
 if "altitude" not in st.session_state:
@@ -446,6 +448,7 @@ with tab_sim:
             if st.button("🔄 Reset", use_container_width=True):
                 st.session_state.playing = False
                 st.session_state.sim_time = 0.0
+                st.session_state.mission_time_control = 0.0
 
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -779,19 +782,24 @@ with tab_sim:
             st.markdown('<div class="ctrl-card" style="padding: 10px 14px;">', unsafe_allow_html=True)
             st.markdown('<div class="ctrl-card-title">🧭 Mission Timeline</div>', unsafe_allow_html=True)
 
+            # The widget state must be synchronized before the slider is
+            # instantiated; Streamlit rejects changing a keyed widget after
+            # it has already been rendered in the same run.
+            if st.session_state.playing:
+                st.session_state.mission_time_control = float(st.session_state.sim_time)
+
             selected_t = st.slider(
                 "Mission Playback Scrubber (seconds)",
                 min_value=0.0,
                 max_value=60.0,
-                value=float(st.session_state.sim_time),
                 step=0.5,
                 label_visibility="collapsed",
                 key="mission_time_control",
             )
-            if abs(selected_t - st.session_state.sim_time) > 0.05:
-                st.session_state.sim_time = selected_t
-                st.session_state.playing = False
-
+            if not st.session_state.playing:
+                if abs(selected_t - st.session_state.sim_time) > 0.05:
+                    st.session_state.playing = False
+                st.session_state.sim_time = float(selected_t)
             prog_pct = (cur_t / 60.0) * 100
             st.markdown(
                 f"""
