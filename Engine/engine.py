@@ -1,5 +1,6 @@
 import math
 from Engine.atmosphere import atmosphere
+from Engine.thermal_management import ThermalManagement
 
 
 class PistonEngine:
@@ -41,6 +42,15 @@ class PistonEngine:
 
         # Health / Degradation parameters (Defaults to healthy 1.0)
         self.injector_efficiency = 1.0
+        self.cooling_efficiency = 1.0
+
+        # Subsystems
+        self.thermal_subsystem = ThermalManagement(
+            tau_cht=self.tau_cht,
+            tau_oil=self.tau_oil,
+            rated_rpm=self.rated_rpm,
+            cooling_efficiency=self.cooling_efficiency,
+        )
 
     def compute_volumetric_efficiency(self, throttle, omega):
         """
@@ -138,19 +148,24 @@ class PistonEngine:
         delta_t_exhaust = q_exhaust / (exhaust_mass_flow * cp_exhaust)
         egt_c = ambient_temp_c + delta_t_exhaust
 
-        # Thermal Target Calculations
-        # CHT Equilibrium Target
-        cht_target = ambient_temp_c + 5.5 * p_gross_kw * (0.8 + 0.4 * (rpm / self.rated_rpm))
-        dcht_dt = (cht_target - cht_c) / self.tau_cht
-
-        # Oil Temperature Equilibrium Target
-        oil_temp_target = ambient_temp_c + 3.2 * p_gross_kw + 0.8 * t_friction
-        doil_temp_dt = (oil_temp_target - oil_temp_c) / self.tau_oil
-
-        # Oil Pressure Model (bar): RPM speed + Oil Temperature viscosity reduction
-        oil_press_base = 1.5 + 0.0008 * rpm
-        visc_factor = 1.0 - 0.0025 * (oil_temp_c - 80.0)
-        oil_pressure_bar = max(1.0, min(6.0, oil_press_base * visc_factor))
+        # Thermal Subsystem Dynamic Calculations
+        thermal_data = self.thermal_subsystem.compute(
+            cht_c=cht_c,
+            oil_temp_c=oil_temp_c,
+            p_gross_kw=p_gross_kw,
+            p_chem_w=p_chem,
+            q_exhaust_w=q_exhaust,
+            t_friction_nm=t_friction,
+            omega=omega,
+            rpm=rpm,
+            ambient_temp_c=ambient_temp_c,
+            cooling_eff=self.cooling_efficiency,
+        )
+        cht_target = thermal_data["cht_target_c"]
+        dcht_dt = thermal_data["dcht_dt"]
+        oil_temp_target = thermal_data["oil_temp_target_c"]
+        doil_temp_dt = thermal_data["doil_temp_dt"]
+        oil_pressure_bar = thermal_data["oil_pressure_bar"]
 
         # Vibration Model (g): Baseline speed-dependent + Injector degradation imbalance
         vib_base = 1.0 + 0.0003 * rpm + 0.15 * math.sin(2.0 * omega * time_s)
@@ -181,6 +196,10 @@ class PistonEngine:
             "oil_pressure_bar": oil_pressure_bar,
             "vibration_g": vibration_g,
             "injector_efficiency": self.injector_efficiency,
+            "cooling_efficiency": self.cooling_efficiency,
+            "heat_generation_kw": thermal_data["heat_generation_kw"],
+            "heat_rejection_kw": thermal_data["heat_rejection_kw"],
+            "thermal_status": thermal_data["thermal_status"],
             "volumetric_efficiency": eta_v,
         }
 
