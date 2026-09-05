@@ -1,0 +1,53 @@
+{
+  "name": "torque-zero",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "build:engine-wasm": "bash scripts/build-engine-wasm.sh",
+    "test:engine-native": "bash scripts/test-engine-native.sh",
+    "test:engine-wasm": "bash scripts/test-engine-wasm.sh",
+    "test:engine-audio-init": "node scripts/test-engine-audio-init.mjs",
+    "lint": "eslint .",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "latest",
+    "@fontsource-variable/space-grotesk": "latest",
+    "@react-three/drei": "latest",
+    "@react-three/fiber": "latest",
+    "@react-three/postprocessing": "^3.0.4",
+    "@react-three/rapier": "^2.2.0",
+    "@types/three": "latest",
+    "class-variance-authority": "latest",
+    "clsx": "latest",
+    "dialkit": "^1.4.3",
+    "fflate": "^0.8.3",
+    "lucide-react": "latest",
+    "postprocessing": "^6.39.3",
+    "react": "latest",
+    "react-dom": "latest",
+    "tailwind-merge": "latest",
+    "three": "latest"
+  },
+  "devDependencies": {
+    "@emnapi/core": "^1.11.2",
+    "@emnapi/runtime": "^1.11.2",
+    "@eslint/js": "latest",
+    "@tailwindcss/vite": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
+    "eslint": "latest",
+    "eslint-plugin-react-hooks": "latest",
+    "eslint-plugin-react-refresh": "latest",
+    "globals": "latest",
+    "tailwindcss": "latest",
+    "typescript": "latest",
+    "typescript-eslint": "latest",
+    "vite": "latest"
+  }
+}

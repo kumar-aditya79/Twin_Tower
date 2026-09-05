@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import math
+import json
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -303,6 +304,10 @@ if "mission_time_control" not in st.session_state:
     st.session_state.mission_time_control = st.session_state.sim_time
 if "playing" not in st.session_state:
     st.session_state.playing = False
+if "engine_running" not in st.session_state:
+    st.session_state.engine_running = False
+if "reset_token" not in st.session_state:
+    st.session_state.reset_token = 0
 if "altitude" not in st.session_state:
     st.session_state.altitude = 10000.0
 if "throttle" not in st.session_state:
@@ -315,6 +320,8 @@ if "fault_severity" not in st.session_state:
     st.session_state.fault_severity = 70.0
 if "fault_start_s" not in st.session_state:
     st.session_state.fault_start_s = 30.0
+if "visual_rpm_scale" not in st.session_state:
+    st.session_state.visual_rpm_scale = 12.0
 if "event_log" not in st.session_state:
     st.session_state.event_log = [
         "[ 00.0s ]  Simulation initialized",
@@ -390,6 +397,17 @@ with tab_sim:
             key="ambient_temp_control",
         )
         st.session_state.ambient_temp = float(ambient_temp)
+
+        visual_rpm_scale = st.slider(
+            "3D Animation Speed (%)",
+            min_value=5,
+            max_value=100,
+            value=int(st.session_state.visual_rpm_scale),
+            step=5,
+            help="Slows only the 3D piston/crankshaft/propeller animation. Backend RPM and telemetry remain unchanged.",
+            key="visual_rpm_scale_control",
+        )
+        st.session_state.visual_rpm_scale = float(visual_rpm_scale)
         st.markdown('</div>', unsafe_allow_html=True)
 
         # Card 2: Fault Injection
@@ -439,16 +457,26 @@ with tab_sim:
 
         col_b1, col_b2, col_b3 = st.columns(3)
         with col_b1:
-            if st.button("▶ Start", use_container_width=True, type="primary"):
+            if st.button("▶ Start Fault Check", use_container_width=True, type="primary"):
                 st.session_state.playing = True
         with col_b2:
-            if st.button("⏸ Pause", use_container_width=True):
+            if st.button("⏸ Pause Fault Check", use_container_width=True):
                 st.session_state.playing = False
         with col_b3:
             if st.button("🔄 Reset", use_container_width=True):
                 st.session_state.playing = False
+                st.session_state.engine_running = False
+                st.session_state.reset_token += 1
                 st.session_state.sim_time = 0.0
                 st.session_state.mission_time_control = 0.0
+
+        engine_col_1, engine_col_2 = st.columns(2)
+        with engine_col_1:
+            if st.button("⚙️ Run Engine Only", use_container_width=True):
+                st.session_state.engine_running = True
+        with engine_col_2:
+            if st.button("⏹ Stop Engine Only", use_container_width=True):
+                st.session_state.engine_running = False
 
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -532,7 +560,10 @@ with tab_sim:
     oil_press = float(cur_row["oil_pressure_bar"])
     egt = float(cur_row["egt_c"])
     thermal_status = str(cur_row["thermal_status"])
-    is_anomaly = str(cur_row["status"]) == "ANOMALY" or thermal_status == "OVERHEAT"
+    ml_anomaly = str(cur_row["status"]) == "ANOMALY"
+    is_anomaly = ml_anomaly or thermal_status == "OVERHEAT"
+    fault_selected = st.session_state.fault_type != "None (Healthy)"
+    fault_active = fault_selected and st.session_state.sim_time >= st.session_state.fault_start_s
     health_idx = float(cur_row["health_index"])
     cht_class = "red" if cht >= 250.0 else ("amber" if cht >= 225.0 else "")
     oil_temp_class = "red" if oil_temp >= 145.0 else ("amber" if oil_temp >= 135.0 else "")
@@ -656,7 +687,44 @@ with tab_sim:
         </body>
         </html>
         """
-        components.html(schematic_html, height=215)
+        engine_state_json = json.dumps({
+            "rpm": rpm,
+            "playing": bool(st.session_state.playing),
+            "engineRunning": bool(st.session_state.engine_running),
+            "resetToken": int(st.session_state.reset_token),
+            "missionTime": float(st.session_state.sim_time),
+            "visualRpmScale": st.session_state.visual_rpm_scale / 100.0,
+            "throttle": st.session_state.throttle / 100.0,
+            "chtC": cht,
+            "oilTempC": oil_temp,
+            "injectorEfficiency": float(cur_row.get("injector_efficiency", 1.0)),
+            "thermalStatus": thermal_status,
+            "faultType": st.session_state.fault_type if st.session_state.sim_time >= st.session_state.fault_start_s else "None (Healthy)",
+        })
+        st.markdown(
+            f'<div id="digital-twin-engine-state" data-state="{engine_state_json.replace(chr(34), "&quot;")}" style="display:none"></div>',
+            unsafe_allow_html=True,
+        )
+        embedded_engine_html = """
+        <style>
+            html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+            iframe { display: block; width: 100%; height: 492px; border: 0; border-radius: 8px; background: #07070b; }
+        </style>
+        <iframe id="digital-twin-engine" src="http://localhost:5173/?embed=1" title="3D digital twin engine visualization" allow="autoplay"></iframe>
+        <script>
+            const frame = document.getElementById("digital-twin-engine");
+            const sendState = () => {
+                const source = window.parent.document.getElementById("digital-twin-engine-state");
+                if (!source) return;
+                try {
+                    frame.contentWindow?.postMessage({type: "digital-twin-engine-state", state: JSON.parse(source.dataset.state)}, "*");
+                } catch (error) { console.warn("Digital twin state was not ready", error); }
+            };
+            frame.addEventListener("load", sendState);
+            window.setInterval(sendState, 100);
+        </script>
+        """
+        components.html(embedded_engine_html, height=498, scrolling=False)
         st.markdown('</div>', unsafe_allow_html=True)
 
         # Card 2: Live Telemetry Horizontal Strip
@@ -801,18 +869,19 @@ with tab_sim:
                     st.session_state.playing = False
                 st.session_state.sim_time = float(selected_t)
             prog_pct = (cur_t / 60.0) * 100
+            fault_pct = (st.session_state.fault_start_s / 60.0) * 100
             st.markdown(
                 f"""
                 <div style="position: relative; height: 6px; background: #1E293B; border-radius: 4px; margin: 12px 6px 18px 6px;">
                     <div style="position: absolute; left: 0; width: {prog_pct}%; height: 100%; background: #38BDF8; border-radius: 4px;"></div>
                     <div style="position: absolute; left: calc({prog_pct}% - 6px); top: -4px; width: 14px; height: 14px; background: #F8FAFC; border: 2px solid #38BDF8; border-radius: 50%;"></div>
-                    <div style="position: absolute; left: 50%; top: -3px; width: 8px; height: 8px; background: #EF4444; border-radius: 50%;" title="Fault (30s)"></div>
+                    <div style="position: absolute; left: {fault_pct}%; top: -3px; width: 8px; height: 8px; background: #EF4444; border-radius: 50%;" title="Fault ({st.session_state.fault_start_s:.1f}s)"></div>
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: #64748B; font-weight: 600;">
                     <span>Takeoff<br><b style="color:#94A3B8;">0-10s</b></span>
                     <span>Climb<br><b style="color:#94A3B8;">10-20s</b></span>
                     <span>Cruise<br><b style="color:#38BDF8;">20-40s</b></span>
-                    <span style="color:#EF4444;">Fault Injected<br><b>(t=30s)</b></span>
+                    <span style="color:#EF4444;">Fault Injected<br><b>(t={st.session_state.fault_start_s:.1f}s)</b></span>
                     <span>High Alt<br><b style="color:#94A3B8;">40-50s</b></span>
                     <span>Descent<br><b style="color:#94A3B8;">50-60s</b></span>
                 </div>
@@ -852,7 +921,7 @@ with tab_sim:
         st.markdown('<div class="ctrl-card">', unsafe_allow_html=True)
         st.markdown('<div class="ctrl-card-title">🛡️ Engine Health</div>', unsafe_allow_html=True)
 
-        if thermal_status == "OVERHEAT" or (is_anomaly and st.session_state.fault_type != "None (Healthy)"):
+        if thermal_status == "OVERHEAT":
             st.markdown(
                 """
                 <div class="health-banner-overheat">
@@ -886,6 +955,16 @@ with tab_sim:
                 unsafe_allow_html=True,
             )
 
+        if ml_anomaly:
+            st.markdown(
+                """
+                <div style="background: rgba(245, 158, 11, 0.14); border: 1px solid #F59E0B; border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; color: #FBBF24; font-size: 0.78rem; font-weight: 700;">
+                    ⚠ ANOMALY DETECTED <span style="color: #94A3B8; font-weight: 500;">(separate from thermal status)</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
         health_bar_color = "#10B981" if health_idx >= 85 else ("#F59E0B" if health_idx >= 75 else "#EF4444")
         st.markdown(
             f"""
@@ -900,7 +979,7 @@ with tab_sim:
             unsafe_allow_html=True,
         )
 
-        detected_fault_name = st.session_state.fault_type if cur_t >= st.session_state.fault_start_s else "None (Healthy)"
+        detected_fault_name = st.session_state.fault_type if fault_active else "None (Healthy)"
         fault_icon = "❄️" if "Cooling" in detected_fault_name else ("⛽" if "Injector" in detected_fault_name else "🛡️")
         fault_health_val = f"{st.session_state.fault_severity:.0f}%" if detected_fault_name != "None (Healthy)" else "100%"
         confidence_val = f"{float(cur_row['severity_confidence'])*100:.1f}%" if "severity_confidence" in cur_row else "100.0%"
@@ -930,7 +1009,22 @@ with tab_sim:
             unsafe_allow_html=True,
         )
 
-        if "Cooling" in st.session_state.fault_type and cur_t >= st.session_state.fault_start_s:
+        explanation_status = "ANOMALY" if ml_anomaly else "NORMAL"
+        explanation_fault = st.session_state.fault_type if fault_selected else "None (Healthy)"
+        explanation_activation = "ACTIVE" if fault_active else "SELECTED / NOT ACTIVE"
+        st.markdown(
+            f"""
+            <div class="causal-box" style="margin-bottom: 10px;">
+                <div>Fault selected: {explanation_fault}</div>
+                <div>Fault activation: {explanation_activation}</div>
+                <div>Thermal status: {thermal_status}</div>
+                <div>ML anomaly: {explanation_status}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if "Cooling" in st.session_state.fault_type and fault_active:
             st.markdown(
                 """
                 <div class="causal-box">
@@ -947,7 +1041,7 @@ with tab_sim:
                 """,
                 unsafe_allow_html=True,
             )
-        elif "Injector" in st.session_state.fault_type and cur_t >= st.session_state.fault_start_s:
+        elif "Injector" in st.session_state.fault_type and fault_active:
             st.markdown(
                 """
                 <div class="causal-box">
@@ -982,10 +1076,49 @@ with tab_sim:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
+        # Compact diagnostics summary stays visible on the Simulation tab.
+        sim_diag_anomaly = str(cur_row.get("status", "NORMAL")) == "ANOMALY"
+        sim_diag_fault = st.session_state.fault_type if fault_active else "None (Healthy)"
+        sim_diag_confidence = float(cur_row.get("severity_confidence", 0.0)) * 100
+        sim_diag_health = float(cur_row.get("health_index", 100.0))
+        sim_diag_severity = str(cur_row.get("severity_label", "Healthy"))
+        sim_diag_color = "#EF4444" if sim_diag_anomaly else "#10B981"
+        sim_diag_reason = (
+            "Fuel flow deviation → combustion power → torque/RPM"
+            if sim_diag_fault == "Injector Degradation"
+            else "Cooling efficiency → heat rejection → thermal response"
+            if sim_diag_fault == "Cooling Degradation"
+            else "Telemetry and physics residuals continuously monitored"
+        )
+        st.markdown(
+            f"""
+            <div style="background:#101726; border:1px solid #1E293B; border-radius:10px; padding:13px 15px; margin-top:12px;">
+                <div style="color:#38BDF8; font-size:.78rem; font-weight:800; letter-spacing:.7px; margin-bottom:12px;">🧠 DIGITAL TWIN DIAGNOSTICS</div>
+                <div style="color:{sim_diag_color}; font-size:1rem; font-weight:800;">{'🔴 ANOMALY DETECTED' if sim_diag_anomaly else '🟢 NO ANOMALY DETECTED'}</div>
+                <div style="color:#F8FAFC; font-size:.82rem; font-weight:700; margin-top:5px;">{sim_diag_fault}</div>
+                <div style="display:grid; grid-template-columns:1fr auto; gap:7px 12px; margin-top:12px; color:#94A3B8; font-size:.72rem;">
+                    <span>Confidence</span><strong style="color:#38BDF8;">{sim_diag_confidence:.1f}%</strong>
+                    <span>Health</span><strong style="color:#10B981;">{sim_diag_health:.0f}%</strong>
+                    <span>Severity</span><strong style="color:#F59E0B;">{sim_diag_severity}</strong>
+                    <span>Thermal status</span><strong style="color:#CBD5E1;">{thermal_status}</strong>
+                </div>
+                <div style="height:1px; background:#1E293B; margin:13px 0 10px;"></div>
+                <div style="color:#F8FAFC; font-size:.72rem; font-weight:800; margin-bottom:5px;">AI REASONING</div>
+                <div style="color:#CBD5E1; font-family:'JetBrains Mono', monospace; font-size:.68rem; line-height:1.45;">{sim_diag_reason}</div>
+                <div style="height:1px; background:#1E293B; margin:13px 0 10px;"></div>
+                <div style="color:#F8FAFC; font-size:.72rem; font-weight:800; margin-bottom:5px;">RECOMMENDATION</div>
+                <div style="color:#FBBF24; font-size:.7rem;">{'⚠ Inspect the affected system before the next mission.' if sim_diag_anomaly else '✓ Continue monitoring engine telemetry.'}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
     if st.session_state.playing:
         if st.session_state.sim_time < 60.0:
             st.session_state.sim_time = min(60.0, st.session_state.sim_time + 0.5)
-            time.sleep(0.15)
+            # Give the embedded WebGL renderer time to initialize between
+            # Streamlit reruns; the simulation timestep remains unchanged.
+            time.sleep(0.8)
             st.rerun()
         else:
             st.session_state.playing = False
@@ -1005,7 +1138,7 @@ with tab_data:
 with tab_diag:
     st.subheader("🩺 Physics-Informed Digital Twin Diagnostics")
     st.caption("Model feature importance, physics residual distributions, and anomaly classification probabilities.")
-    col_d1, col_d2 = st.columns(2)
+    col_d1, col_d2, col_d3 = st.columns([1.0, 1.0, 0.9])
     with col_d1:
         st.markdown("**ML Anomaly Detection Probability Stream**")
         fig_prob = go.Figure()
@@ -1019,6 +1152,53 @@ with tab_diag:
         fig_res.add_trace(go.Scatter(x=df_sim["time_s"], y=residuals, line=dict(color="#38BDF8", width=2)))
         fig_res.update_layout(height=280, template="plotly_dark", paper_bgcolor="#0B111E", plot_bgcolor="#0B111E", yaxis_title="Delta Power (kW)")
         st.plotly_chart(fig_res, use_container_width=True)
+    with col_d3:
+        diagnostic_anomaly = str(cur_row.get("status", "NORMAL")) == "ANOMALY"
+        diagnostic_fault = st.session_state.fault_type if fault_active else "None (Healthy)"
+        diagnostic_confidence = float(cur_row.get("severity_confidence", 0.0)) * 100
+        diagnostic_health = float(cur_row.get("health_index", 100.0))
+        diagnostic_severity = str(cur_row.get("severity_label", "Healthy"))
+        if diagnostic_fault == "Injector Degradation":
+            reasoning = ["Healthy baseline", "Fuel flow deviation ↑", "Combustion power ↓", "Torque & RPM ↓", "Anomalous engine behavior"]
+            recommendation = "⚠ Inspect fuel injection system before next mission."
+        elif diagnostic_fault == "Cooling Degradation":
+            reasoning = ["Healthy baseline", "Cooling efficiency ↓", "Heat rejection deviation ↑", "Thermal response changes", "Anomalous engine behavior"]
+            recommendation = "⚠ Inspect cooling system before next mission."
+        else:
+            reasoning = ["Healthy baseline", "Telemetry monitored", "Physics residuals evaluated", "Operating state classified"]
+            recommendation = "✓ Continue monitoring engine telemetry."
+        diagnostic_status = "🔴 ANOMALY DETECTED" if diagnostic_anomaly else "🟢 NO ANOMALY DETECTED"
+        diagnostic_color = "#EF4444" if diagnostic_anomaly else "#10B981"
+        reasoning_html = "".join(
+            f'<div style="color: {"#F8FAFC" if index == 0 else "#CBD5E1"};">{step}</div>'
+            + ('<div style="text-align:center; color:#38BDF8; margin:2px 0;">↓</div>' if index < len(reasoning) - 1 else '')
+            for index, step in enumerate(reasoning)
+        )
+        st.markdown(
+            f"""
+            <div style="height: 100%; min-height: 365px; background: #101726; border: 1px solid #1E293B; border-radius: 10px; overflow: hidden;">
+                <div style="padding: 13px 15px; border-bottom: 1px solid #1E293B; color: #38BDF8; font-size: .78rem; font-weight: 800; letter-spacing: .7px;">🧠 DIGITAL TWIN DIAGNOSTICS</div>
+                <div style="padding: 13px 15px;">
+                    <div style="color:#64748B; font-size:.68rem; font-weight:700; letter-spacing:.8px;">CURRENT ASSESSMENT</div>
+                    <div style="margin-top:10px; color:{diagnostic_color}; font-size:1.05rem; font-weight:800;">{diagnostic_status}</div>
+                    <div style="margin-top:5px; color:#F8FAFC; font-size:.82rem; font-weight:700;">{diagnostic_fault}</div>
+                    <div style="display:grid; grid-template-columns:1fr auto; gap:7px 12px; margin-top:14px; color:#94A3B8; font-size:.72rem;">
+                        <span>Confidence</span><strong style="color:#38BDF8;">{diagnostic_confidence:.1f}%</strong>
+                        <span>Health</span><strong style="color:#10B981;">{diagnostic_health:.0f}%</strong>
+                        <span>Severity</span><strong style="color:#F59E0B;">{diagnostic_severity}</strong>
+                        <span>Thermal status</span><strong style="color:#CBD5E1;">{thermal_status}</strong>
+                    </div>
+                    <div style="height:1px; background:#1E293B; margin:16px 0 13px;"></div>
+                    <div style="color:#F8FAFC; font-size:.72rem; font-weight:800; margin-bottom:9px;">AI REASONING</div>
+                    <div style="font-family:'JetBrains Mono', monospace; font-size:.68rem; line-height:1.35;">{reasoning_html}</div>
+                    <div style="height:1px; background:#1E293B; margin:16px 0 13px;"></div>
+                    <div style="color:#F8FAFC; font-size:.72rem; font-weight:800; margin-bottom:7px;">RECOMMENDATION</div>
+                    <div style="color:#FBBF24; font-size:.7rem; line-height:1.4;">{recommendation}</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 with tab_about:
     st.subheader("ℹ️ About the Aero-Piston Engine Digital Twin")
