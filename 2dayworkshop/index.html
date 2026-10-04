@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Big Data Computing — 2-Day Workshop | GHRCEMP 2026</title>
+  <meta name="description" content="A 2-Day intensive workshop on Big Data Computing combining distributed systems theory and hands-on PySpark & Kafka streaming labs at GHRCEMP Nagpur." />
+
+  <!-- Google Fonts: Instrument Serif / Newsreader + JetBrains Mono + Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet" />
+
+  <!-- External Libraries (SheetJS for Excel Export, QRCode.js for Projector/Scan Key) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Application Stylesheet -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Background Animated Network Canvas -->
+  <canvas id="network-canvas"></canvas>
+
+  <!-- Top Scroll Progress Indicator -->
+  <div id="scroll-progress"></div>
+
+  <!-- SITE HEADER / NAVIGATION -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="#hero" class="brand-logo">
+        <span class="code-tag">BDC /</span> 26
+      </a>
+
+      <nav class="nav-links" id="nav-links">
+        <a href="#overview" class="nav-link">OVERVIEW</a>
+        <a href="#schedule" class="nav-link">SCHEDULE</a>
+        <a href="#speakers" class="nav-link">SPEAKERS</a>
+        <a href="#notes" class="nav-link">NOTES</a>
+        <a href="#attendance" class="nav-link">ATTENDANCE</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button id="admin-btn" class="btn-admin" title="Access Organizer Command Center">
+          ADMIN ⛭
+        </button>
+        <a href="#attendance" class="btn-primary">
+          Register ↗
+        </a>
+        <button class="menu-toggle" id="menu-toggle" aria-label="Toggle Navigation Menu">
+          ☰
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT WRAPPER -->
+  <main>
+
+    <!-- ====================================================================
+         HERO SECTION
+         ==================================================================== -->
+    <section class="hero-section" id="hero">
+      <div class="container">
+        <div class="hero-tag">
+          GHRC · COMPUTING WORKSHOP 2026
+        </div>
+
+        <h1 class="hero-title">
+          Big Data
+          <span class="title-accent">Computing</span>
+        </h1>
+
+        <div class="hero-grid">
+          <!-- Left Column: Details & CTAs -->
+          <div class="hero-main-col">
+            <div class="hero-meta-row">
+              <div class="meta-col">
+                <div class="meta-label">WHEN</div>
+                <div class="meta-value">14—15 November 2026</div>
+              </div>
+              <div class="meta-col">
+                <div class="meta-label">WHERE</div>
+                <div class="meta-value">Nagpur, Maharashtra</div>
+              </div>
+              <div class="meta-col">
+                <div class="meta-label">FORMAT</div>
+                <div class="meta-value">Theory + lab practice</div>
+              </div>
+            </div>
+
+            <p class="hero-pitch">
+              Two concentrated days moving from distributed systems fundamentals
+              to real-time pipelines you can build, benchmark, and explain.
+            </p>
+
+            <div class="hero-ctas">
+              <a href="#attendance" class="btn-primary">
+                Register for the workshop ↗
+              </a>
+              <a href="#schedule" class="btn-secondary">
+                Explore schedule ↘
+              </a>
+            </div>
+          </div>
+
+          <!-- Right Column: Live Countdown Card -->
+          <div class="hero-sidebar-col">
+            <div class="hero-countdown-card">
+              <div class="countdown-header">
+                <span class="countdown-label">STARTS IN</span>
+                <span class="live-counter-badge" style="padding: 0.2rem 0.5rem; font-size: 0.65rem;">
+                  <span class="counter-pulse"></span> LIVE CLOCK
+                </span>
+              </div>
+
+              <div class="countdown-digits-grid">
+                <div class="digit-unit">
+                  <div class="digit-num" id="days-count">67</div>
+                  <div class="digit-label">DAYS</div>
+                </div>
+                <div class="digit-unit">
+                  <div class="digit-num" id="hours-count">23</div>
+                  <div class="digit-label">HOURS</div>
+                </div>
+                <div class="digit-unit">
+                  <div class="digit-num" id="mins-count">16</div>
+                  <div class="digit-label">MINS</div>
+                </div>
+                <div class="digit-unit">
+                  <div class="digit-num" id="secs-count">52</div>
+                  <div class="digit-label">SECS</div>
+                </div>
+              </div>
+
+              <div class="hero-side-quote">
+                <span class="arrow-cyan">↳</span>
+                <span>A working room for students who want to understand what happens between a dataset and a decision.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ====================================================================
+         01 / THE BRIEF (ABOUT / OVERVIEW)
+         ==================================================================== -->
+    <section class="section-wrapper" id="overview">
+      <div class="container">
+        <div class="section-header-block">
+          <div class="section-idx">/ 01</div>
+          <div class="section-title-wrap">
+            <span class="section-tag">THE BRIEF</span>
+            <h2 class="section-heading">A systems-first introduction to data at scale.</h2>
+          </div>
+        </div>
+
+        <div class="brief-intro-grid">
+          <p class="brief-lead-text">
+            This is not a slide marathon. Across two days, we'll connect the architecture
+            behind modern data products to the code patterns that make them reliable,
+            fast, and useful.
+          </p>
+
+          <ul class="brief-pillars">
+            <li>01 Distributed systems</li>
+            <li>02 Spark + streaming</li>
+            <li>03 Lakehouse thinking</li>
+          </ul>
+        </div>
+
+        <div class="brief-cards-grid">
+          <div class="brief-card">
+            <div class="brief-card-tag">01 / COVERAGE</div>
+            <p class="brief-card-text">
+              From RDBMS limits and HDFS to Kafka, Delta Lake, and real-time ML features.
+            </p>
+          </div>
+          <div class="brief-card">
+            <div class="brief-card-tag">02 / FOR</div>
+            <p class="brief-card-text">
+              CS students, aspiring data engineers, ML engineers, and analysts.
+            </p>
+          </div>
+          <div class="brief-card">
+            <div class="brief-card-tag">03 / BRING</div>
+            <p class="brief-card-text">
+              A laptop, charger, college email ID, and basic programming knowledge.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ====================================================================
+         02 / THE RUN OF SHOW (SCHEDULE & TIMELINE)
+         ==================================================================== -->
+    <section class="section-wrapper" id="schedule">
+      <div class="container">
+        <div class="section-header-block">
+          <div class="section-idx">/ 02</div>
+          <div class="section-title-wrap">
+            <span class="section-tag">THE RUN OF SHOW</span>
+            <h2 class="section-heading">Follow the signal from foundations to live pipelines.</h2>
+          </div>
+        </div>
+
+        <div class="schedule-nav">
+          <button class="tab-btn active" data-day="day1" onclick="window.switchScheduleTab('day1')">
+            DAY 01 / SYSTEMS
+          </button>
+          <button class="tab-btn" data-day="day2" onclick="window.switchScheduleTab('day2')">
+            DAY 02 / STREAMING
+          </button>
+        </div>
+
+        <div class="schedule-timeline" id="schedule-timeline-container">
+          <!-- Timeline rows injected dynamically from config.js -->
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ====================================================================
+         03 / THE PEOPLE (SPEAKERS)
+         ==================================================================== -->
+    <section class="section-wrapper" id="speakers">
+      <div class="container">
+        <div class="section-header-block">
+          <div class="section-idx">/ 03</div>
+          <div class="section-title-wrap">
+            <span class="section-tag">THE PEOPLE</span>
+            <h2 class="section-heading">Learn from people who ship the systems.</h2>
+          </div>
+        </div>
+
+        <div id="speaker-container">
+          <!-- Speaker card injected dynamically -->
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ====================================================================
+         04 / THE ARCHIVE (LECTURE NOTES & RESOURCES)
+         ==================================================================== -->
+    <section class="section-wrapper" id="notes">
+      <div class="container">
+        <div class="section-header-block">
+          <div class="section-idx">/ 04</div>
+          <div class="section-title-wrap">
+            <span class="section-tag">THE ARCHIVE</span>
+            <h2 class="section-heading">Lecture notes, arranged for the next build.</h2>
+          </div>
+        </div>
+
+        <div class="archive-list" id="archive-list-container">
+          <!-- Lecture note items injected dynamically -->
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ====================================================================
+         05 / REGISTRATION & ATTENDANCE (10-METER GEOFENCED)
+         ==================================================================== -->
+    <section class="section-wrapper" id="attendance">
+      <div class="container">
+        <div class="section-header-block">
+          <div class="section-idx">/ 05</div>
+          <div class="section-title-wrap">
+            <span class="section-tag">REGISTRATION & ATTENDANCE</span>
+            <h2 class="section-heading">Verified session check-in.</h2>
+          </div>
+        </div>
+
+        <div class="attendance-card">
+          <div class="attendance-security-pills">
+            <div class="status-pill" style="color: var(--accent-cyan); background: var(--accent-cyan-dim); border: 1px solid var(--accent-cyan-border);">
+              <span>●</span> 10-Meter Geofence (Green &le; 10m | Red &gt; 10m)
+            </div>
+            <div class="status-pill" style="color: var(--text-secondary); background: var(--bg-surface-subtle); border: 1px solid var(--border-line);">
+              <span>●</span> @ghrcemp.raisoni.net
+            </div>
+            <div class="status-pill" style="color: #10B981; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4);">
+              <span>●</span> 1 Response Per Device
+            </div>
+            <div class="status-pill" id="client-ip-pill" style="color: var(--text-dim); background: var(--bg-surface-subtle); border: 1px solid var(--border-line);">
+              <span>●</span> IP: <span id="client-ip-text">Detecting...</span>
+            </div>
+          </div>
+
+          <!-- GPS Status Banner -->
+          <div class="geo-status-banner">
+            <div>
+              <div class="geo-status-text" id="geo-status-indicator">Acquiring high-precision GPS fix...</div>
+            </div>
+            <div style="display:flex; align-items:center; gap: 1rem; flex-wrap: wrap;">
+              <span class="geo-distance-tag" id="geo-distance-display">CALCULATING...</span>
+              <button type="button" id="acquire-gps-btn" class="btn-secondary" style="padding: 0.35rem 0.7rem; font-size: 0.7rem;">
+                REFRESH GPS ⟳
+              </button>
+            </div>
+          </div>
+
+          <!-- Attendance Check-in Form (Directly Open & Interactive) -->
+          <form id="attendance-checkin-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="student-name">Full Name</label>
+                <input type="text" id="student-name" class="form-input" placeholder="e.g. Rahul Sharma" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="student-roll">Roll Number / Student ID</label>
+                <input type="text" id="student-roll" class="form-input" placeholder="e.g. 23CS0142" required />
+              </div>
+
+              <div class="form-group full-width">
+                <label class="form-label" for="student-email">College Email ID</label>
+                <input type="email" id="student-email" class="form-input" placeholder="name@ghrcemp.raisoni.net" required />
+                <span class="form-hint error-msg" id="email-domain-error">Please use your college email (must end with @ghrcemp.raisoni.net)</span>
+                <span class="form-hint">Must be registered with @ghrcemp.raisoni.net institutional domain.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="attendance-day">Workshop Day</label>
+                <select id="attendance-day" class="form-input" style="background: var(--bg-surface-subtle); color: var(--text-primary);">
+                  <option value="Day 1">Day 1 (Nov 14, 2026)</option>
+                  <option value="Day 2">Day 2 (Nov 15, 2026)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="attendance-session">Session Slot</label>
+                <select id="attendance-session" class="form-input" style="background: var(--bg-surface-subtle); color: var(--text-primary);">
+                  <option value="Morning Check-in (09:30 AM)">Morning Check-in (09:30 AM)</option>
+                  <option value="Post-Lunch Lab Check-in (02:15 PM)">Post-Lunch Lab Check-in (02:15 PM)</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 0.95rem; font-size: 0.85rem; margin-top: 0.5rem;">
+              Submit Registration & Mark Attendance ↗
+            </button>
+          </form>
+
+          <div id="attendance-alert-box" class="attendance-alert"></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ====================================================================
+         06 / INTELLIGENCE & FAQ
+         ==================================================================== -->
+    <section class="section-wrapper" id="faq">
+      <div class="container">
+        <div class="section-header-block">
+          <div class="section-idx">/ 06</div>
+          <div class="section-title-wrap">
+            <span class="section-tag">INTELLIGENCE & FAQ</span>
+            <h2 class="section-heading">Everything you need to know before day one.</h2>
+          </div>
+        </div>
+
+        <div class="faq-grid" id="faq-container">
+          <!-- FAQ Items injected dynamically -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- ====================================================================
+       SITE FOOTER
+       ==================================================================== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top-grid">
+        <div class="footer-brand">
+          <div class="brand-logo">
+            <span class="code-tag">BDC /</span> 26
+          </div>
+          <p class="footer-tagline">
+            2-Day Intensive Hands-on Workshop on Big Data Computing, Apache Spark, Kafka & Cloud Lakehouse Architecture.
+          </p>
+        </div>
+
+        <div>
+          <div class="footer-col-title">NAVIGATION</div>
+          <ul class="footer-links">
+            <li><a href="#overview" class="footer-link">Overview & Topics</a></li>
+            <li><a href="#schedule" class="footer-link">Run of Show</a></li>
+            <li><a href="#speakers" class="footer-link">Speaker Profile</a></li>
+            <li><a href="#notes" class="footer-link">Lecture Archive</a></li>
+            <li><a href="#attendance" class="footer-link">Mark Attendance</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="footer-col-title">INSTITUTION</div>
+          <ul class="footer-links">
+            <li class="mono" style="font-size: 0.8rem; color: var(--text-secondary);">G.H. Raisoni College of Engineering and Management</li>
+            <li class="mono" style="font-size: 0.8rem; color: var(--text-dim);">Department of Computer Science & Engineering</li>
+            <li class="mono" style="font-size: 0.8rem; color: var(--text-dim);">Nagpur, Maharashtra</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom-bar">
+        <div class="footer-copy">
+          © 2026 Big Data Computing Workshop · GHRCEMP. All rights reserved.
+        </div>
+
+        <!-- Monospace Stream Cyan Live Site Visits Counter -->
+        <div class="live-counter-badge">
+          <span class="counter-pulse"></span>
+          <span id="footer-visit-counter">1,204 visits</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- ====================================================================
+       ADMIN COMMAND CENTER & PROJECTOR DISPLAY MODAL
+       ==================================================================== -->
+  <div class="admin-modal-overlay" id="admin-modal">
+    <div class="admin-modal-card">
+      <div class="admin-modal-header">
+        <div class="admin-modal-title">
+          ORGANIZER COMMAND CENTER · BDC '26
+        </div>
+        <button class="close-modal-btn" id="close-admin-modal" title="Close Admin Center">✕</button>
+      </div>
+
+      <div class="admin-modal-body">
+        <div class="admin-tabs-nav">
+          <button class="admin-tab-btn active" data-admin-tab="records">
+            Live Attendance Records
+          </button>
+          <button class="admin-tab-btn" data-admin-tab="venue">
+            Venue GPS Geofence Settings
+          </button>
+          <button class="admin-tab-btn" data-admin-tab="notes">
+            Lecture Notes Manager
+          </button>
+        </div>
+
+        <!-- TAB 1: LIVE ATTENDANCE RECORDS (DEFAULT ACTIVE) -->
+        <div class="admin-tab-pane" id="admin-pane-records" style="display:block;">
+          <div class="admin-table-controls">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+              <input type="text" id="admin-search-input" class="admin-search-input" placeholder="Search Roll No, Name or Email..." />
+              <select id="admin-filter-session" class="form-input" style="padding: 0.55rem 0.9rem; font-size: 0.8rem;">
+                <option value="ALL">All Days & Sessions</option>
+                <option value="Day 1 - Morning Check-in (09:30 AM)">Day 1 - Morning Check-in</option>
+                <option value="Day 1 - Post-Lunch Lab Check-in (02:15 PM)">Day 1 - Post-Lunch Lab</option>
+                <option value="Day 2 - Morning Check-in (09:30 AM)">Day 2 - Morning Check-in</option>
+                <option value="Day 2 - Post-Lunch Lab Check-in (02:15 PM)">Day 2 - Post-Lunch Lab</option>
+              </select>
+            </div>
+
+            <button id="export-excel-btn" class="btn-primary" style="padding: 0.55rem 1rem; font-size: 0.78rem;">
+              Download Attendance (Excel .xlsx) ⭳
+            </button>
+          </div>
+
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Roll Number</th>
+                  <th>Student Name</th>
+                  <th>College Email</th>
+                  <th>IP Address</th>
+                  <th>Day & Session</th>
+                  <th>Time</th>
+                  <th>Distance</th>
+                  <th>Geofence Status</th>
+                </tr>
+              </thead>
+              <tbody id="admin-attendance-tbody">
+                <!-- Records injected dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: VENUE GEOFENCE SETTINGS -->
+        <div class="admin-tab-pane" id="admin-pane-venue" style="display:none;">
+          <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-line); padding: 2rem; border-radius: 2px; max-width: 600px;">
+            <div class="mono" style="font-size: 0.8rem; color: var(--accent-cyan); margin-bottom: 1.5rem;">
+              CONFIGURE VENUE GPS COORDINATES & 10M GEOFENCE
+            </div>
+
+            <button type="button" id="set-my-location-venue-btn" class="btn-secondary" style="margin-bottom: 1.5rem; width: 100%; justify-content: center; border-color: var(--accent-cyan); color: var(--accent-cyan);">
+              📍 Lock Current GPS Position as Venue Coordinates
+            </button>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label class="form-label" for="venue-lat-input">Venue Latitude</label>
+              <input type="number" step="0.000001" id="venue-lat-input" class="form-input" />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label class="form-label" for="venue-lng-input">Venue Longitude</label>
+              <input type="number" step="0.000001" id="venue-lng-input" class="form-input" />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+              <label class="form-label" for="venue-radius-input">Strict Geofence Radius (Meters)</label>
+              <input type="number" id="venue-radius-input" class="form-input" value="10" />
+              <span class="form-hint">&le; 10 meters is marked in GREEN (Verified). &gt; 10 meters is marked in RED (Flagged).</span>
+            </div>
+
+            <button type="button" id="save-venue-btn" class="btn-primary">
+              Save Geofence Settings
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 4: LECTURE NOTES MANAGER -->
+        <div class="admin-tab-pane" id="admin-pane-notes" style="display:none;">
+          <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-line); padding: 2rem; border-radius: 2px; max-width: 700px;">
+            <div class="mono" style="font-size: 0.8rem; color: var(--accent-cyan); margin-bottom: 1.5rem;">
+              ADD / UPDATE LECTURE NOTE ASSET
+            </div>
+
+            <form id="add-note-form">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="new-note-day">Day</label>
+                  <select id="new-note-day" class="form-input">
+                    <option value="Day 1">Day 1</option>
+                    <option value="Day 2">Day 2</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="new-note-session">Session Tag</label>
+                  <input type="text" id="new-note-session" class="form-input" placeholder="e.g. Module 1" required />
+                </div>
+
+                <div class="form-group full-width">
+                  <label class="form-label" for="new-note-title">Lecture / Notebook Title</label>
+                  <input type="text" id="new-note-title" class="form-input" placeholder="e.g. PySpark Window Functions Code" required />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="new-note-speaker">Speaker / Presenter</label>
+                  <input type="text" id="new-note-speaker" class="form-input" value="Dr. Priya Nair" required />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="new-note-url">File Link / Storage URL</label>
+                  <input type="text" id="new-note-url" class="form-input" placeholder="https://... or #" required />
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary" style="margin-top: 1rem;">
+                Publish Lecture Note Link
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Config & Application Scripts -->
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
